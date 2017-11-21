@@ -52,14 +52,14 @@
             </xs:element>
             <xs:element name="ZipOrigination" maxOccurs="1" minOccurs="1">
                 <xs:simpleType>
-                    <xs:restriction base="xs:int">
+                    <xs:restriction base="xs:string">
                         <xs:pattern value="\d{5}"/>
                     </xs:restriction>
                 </xs:simpleType>
             </xs:element>
             <xs:element name="ZipDestination" maxOccurs="1" minOccurs="1">
                 <xs:simpleType>
-                    <xs:restriction base="xs:int">
+                    <xs:restriction base="xs:string">
                         <xs:pattern value="\d{5}"/>
                     </xs:restriction>
                 </xs:simpleType>

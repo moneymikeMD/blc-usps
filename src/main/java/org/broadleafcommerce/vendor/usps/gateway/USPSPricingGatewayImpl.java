@@ -89,7 +89,7 @@ public class USPSPricingGatewayImpl implements USPSPricingGateway, InitializingB
     
     protected JAXBContext jaxbContext;
     
-    protected Integer timeout = 2000;
+    protected Integer timeout = 5000;
     
     protected String charSet = "UTF-8";
 
@@ -197,8 +197,8 @@ public class USPSPricingGatewayImpl implements USPSPricingGateway, InitializingB
             pkg.setID(String.valueOf(fulfillmentGroup.getOrder().getId()) + '-' + i);
             String zip = CharMatcher.DIGIT.retainFrom(fulfillmentAddress.getPostalCode()).substring(0, 5);
             String originZip = CharMatcher.DIGIT.retainFrom(fulfillmentGroup.getAddress().getPostalCode()).substring(0, 5);
-            pkg.setZipOrigination(Integer.parseInt(zip));
-            pkg.setZipDestination(Integer.parseInt(originZip));
+            pkg.setZipOrigination(zip);
+            pkg.setZipDestination(originZip);
             pkg.setPounds(weightPoundsPerPackage.intValue());
             pkg.setOunces(weightOuncesPerPackage.floatValue());
             
@@ -217,7 +217,7 @@ public class USPSPricingGatewayImpl implements USPSPricingGateway, InitializingB
         if(WeightUnitOfMeasureType.POUNDS.equals(weightUnit)) {
             convertedWeight = weight;
         } else if(WeightUnitOfMeasureType.KILOGRAMS.equals(weightUnit)) {
-            convertedWeight = UnitOfMeasureUtil.convertKilogramsToPounds(weight);
+            convertedWeight = UnitOfMeasureUtil.convertPoundsToKilograms(weight);
         } else {
             throw new FulfillmentPriceException("Incompatible Weight Unit: " + weightUnit.getType() + ". Cannot convert to Kilograms.");
         }
@@ -337,10 +337,14 @@ public class USPSPricingGatewayImpl implements USPSPricingGateway, InitializingB
                 jaxbContext.createMarshaller().marshal(new ObjectFactory().createRateV4Request(request), stringWriter);
                 osw.write(URLEncoder.encode(stringWriter.toString(), this.charSet));
                 osw.flush();
+
+                logger.debug("USPS Rate Request:\n" + stringWriter.toString());
+
                 is = new BufferedInputStream(connection.getInputStream());
                 reader = new InputStreamReader(is);
                 
                 JAXBElement<?> response = (JAXBElement<?>)jaxbContext.createUnmarshaller().unmarshal(reader);
+
                 if (response.getValue() instanceof ErrorV4Type) {
                     ErrorV4Type error = (ErrorV4Type)response.getValue();
                     StringBuilder errorMsg = new StringBuilder("Error calling USPS: \n");
@@ -351,7 +355,11 @@ public class USPSPricingGatewayImpl implements USPSPricingGateway, InitializingB
                     errorMsg.append("Help File: ").append(error.getHelpFile());
                     throw new FulfillmentPriceException(errorMsg.toString());
                 } else {
-                    return (RateV4ResponseType)response.getValue();
+                    RateV4ResponseType uspsResp = (RateV4ResponseType)response.getValue();
+                    logger.debug(uspsResp.toString());
+                    logger.debug("Packages: " + uspsResp.getPackage().size());
+                    logger.debug("Zone: " + uspsResp.getPackage().get(0).getZone());
+                    return uspsResp;
                 }
             } catch (JAXBException e) {
                 throw new FulfillmentPriceException("Error occured making a call to USPS.", e);

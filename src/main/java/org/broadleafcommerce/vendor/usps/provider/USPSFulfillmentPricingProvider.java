@@ -202,40 +202,52 @@ public class USPSFulfillmentPricingProvider implements FulfillmentPricingProvide
         FulfillmentEstimationResponse response = new FulfillmentEstimationResponse();
         HashMap<FulfillmentOption, Money> shippingPrices = new HashMap<FulfillmentOption, Money>();
         response.setFulfillmentOptionPrices(shippingPrices);
-        
-        RateV4ResponseType rateResponse = uspsPricingGateway.retrieveDomesticRates(fulfillmentGroup, fulfillmentGroup.getFulfillmentGroupItems(), config, true);
-        List<ResponsePackageV4Type> packages = rateResponse.getPackage();
-        
-        for (FulfillmentOption option : options) {
-            if (canCalculateCostForFulfillmentGroup(fulfillmentGroup, option)) {
-                USPSFulfillmentOption uspsOption = (USPSFulfillmentOption)option;
-                for (ResponsePackageV4Type type : packages) {
-                    if (type.getError() == null) {
-                        List<PostageV4Type> postages = type.getPostage();
-                        for (PostageV4Type postage : postages) {
-                            if (doesMatchMailService(uspsOption.getService(), postage.getMailService())) {
-                                BigDecimal totalAmount = new BigDecimal(postage.getRate());
-                                totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
-                                if (config.getUpchargePercentage() != null) {
-                                    BigDecimal upCharge = config.getUpchargePercentage();
-                                    upCharge = upCharge.setScale(2, RoundingMode.HALF_UP);
-                                    if (upCharge.doubleValue() > 0D) {
-                                        totalAmount = totalAmount.add(totalAmount.multiply(upCharge));
-                                    } else {
-                                        throw new IllegalStateException("USPS Upcharge must be positive. Found: " + upCharge.toString());
+
+        //final boolean anyFulfillmentOptionViable = options.stream().anyMatch(option -> canCalculateCostForFulfillmentGroup(fulfillmentGroup, option));
+
+        boolean anyFulfillmentOptionViable = false;
+        for(FulfillmentOption option : options) {
+            if(canCalculateCostForFulfillmentGroup(fulfillmentGroup, option)) {
+                anyFulfillmentOptionViable = true;
+                break;
+            }
+        }
+
+        if(anyFulfillmentOptionViable) {
+
+            RateV4ResponseType rateResponse = uspsPricingGateway.retrieveDomesticRates(fulfillmentGroup, fulfillmentGroup.getFulfillmentGroupItems(), config, true);
+            List<ResponsePackageV4Type> packages = rateResponse.getPackage();
+
+            for (FulfillmentOption option : options) {
+                if (canCalculateCostForFulfillmentGroup(fulfillmentGroup, option)) {
+                    USPSFulfillmentOption uspsOption = (USPSFulfillmentOption) option;
+                    for (ResponsePackageV4Type type : packages) {
+                        if (type.getError() == null) {
+                            List<PostageV4Type> postages = type.getPostage();
+                            for (PostageV4Type postage : postages) {
+                                if (doesMatchMailService(uspsOption.getService(), postage.getMailService())) {
+                                    BigDecimal totalAmount = new BigDecimal(postage.getRate());
+                                    totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
+                                    if (config.getUpchargePercentage() != null) {
+                                        BigDecimal upCharge = config.getUpchargePercentage();
+                                        upCharge = upCharge.setScale(2, RoundingMode.HALF_UP);
+                                        if (upCharge.doubleValue() > 0D) {
+                                            totalAmount = totalAmount.add(totalAmount.multiply(upCharge));
+                                        } else {
+                                            throw new IllegalStateException("USPS Upcharge must be positive. Found: " + upCharge.toString());
+                                        }
                                     }
+
+                                    shippingPrices.put(option, new Money(totalAmount, DEFAULT_CURRENCY));
+                                    break;
                                 }
-                                
-                                shippingPrices.put(option, new Money(totalAmount, DEFAULT_CURRENCY));
-                                break;
                             }
+
                         }
-                        
                     }
                 }
             }
         }
-
         return response;
     }
 

@@ -67,7 +67,7 @@ public class USPSServiceType implements Serializable, BroadleafEnumerationType {
     public static final USPSServiceType FIRST_CLASS  = new USPSServiceType("FIRST_CLASS", "FIRST CLASS", "First Class");
     public static final USPSServiceType FIRST_CLASS_COMMERCIAL  = new USPSServiceType("FIRST_CLASS_COMMERCIAL", "FIRST CLASS COMMERCIAL", "First Class Commercial");
     public static final USPSServiceType FIRST_CLASS_HFP_COMMERCIAL  = new USPSServiceType("FIRST_CLASS_HFP_COMMERCIAL", "FIRST CLASS HFP COMMERCIAL", "First Class HFP Commercial");
-    public static final USPSServiceType PRIORITY  = new USPSServiceType("PRIORITY", "PRIORITY", "Priority", Pattern.compile("^PRIORITY MAIL \\d.*$"));
+    public static final USPSServiceType PRIORITY  = new USPSServiceType("PRIORITY", "PRIORITY", "Priority", Pattern.compile("^PRIORITY MAIL (MILITARY|\\d).*$"));
     public static final USPSServiceType PRIORITY_COMMERCIAL  = new USPSServiceType("PRIORITY_COMMERCIAL", "PRIORITY COMMERCIAL", "Priority Commercial");
     public static final USPSServiceType PRIORITY_HFP_COMMERCIAL  = new USPSServiceType("PRIORITY_HFP_COMMERCIAL", "PRIORITY HFP COMMERCIAL", "Priority HFP Commercial");
     public static final USPSServiceType EXPRESS = new USPSServiceType("EXPRESS", "EXPRESS", "Express", Pattern.compile("^PRIORITY MAIL EXPRESS \\d.*$"));

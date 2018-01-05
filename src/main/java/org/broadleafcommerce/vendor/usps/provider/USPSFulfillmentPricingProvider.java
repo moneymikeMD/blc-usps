@@ -77,6 +77,13 @@ public class USPSFulfillmentPricingProvider implements FulfillmentPricingProvide
     @Resource(name="blUSPSConfigurationService")
     protected USPSConfigurationService uspsConfigurationService;
 
+    private Comparator<PostageV4Type> priceComparator = new Comparator<PostageV4Type>() {
+        @Override
+        public int compare(PostageV4Type o1, PostageV4Type o2) {
+            return Float.compare(o1.getRate(), o2.getRate());
+        }
+    };
+
     @Override
     public FulfillmentGroup calculateCostForFulfillmentGroup(
             FulfillmentGroup fulfillmentGroup) throws FulfillmentPriceException {
@@ -147,6 +154,7 @@ public class USPSFulfillmentPricingProvider implements FulfillmentPricingProvide
             for (ResponsePackageV4Type pkg : packages) {
                 LOG.debug(pkg.toString());
                 List<PostageV4Type> postages = pkg.getPostage();
+                Collections.sort(postages, priceComparator);
                 for (PostageV4Type postage : postages) {
                     if(doesMatchMailService(uspsFulfillmentOption.getService(), postage.getMailService())) {
                         totalFees = new Money(postage.getRate(), DEFAULT_CURRENCY);
@@ -224,6 +232,7 @@ public class USPSFulfillmentPricingProvider implements FulfillmentPricingProvide
                     for (ResponsePackageV4Type type : packages) {
                         if (type.getError() == null) {
                             List<PostageV4Type> postages = type.getPostage();
+                            Collections.sort(postages, priceComparator);
                             for (PostageV4Type postage : postages) {
                                 if (doesMatchMailService(uspsOption.getService(), postage.getMailService())) {
                                     BigDecimal totalAmount = new BigDecimal(postage.getRate());
